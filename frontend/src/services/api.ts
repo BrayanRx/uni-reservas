@@ -15,11 +15,34 @@ export interface LoginResponse {
   access_token: string;
   token_type: string;
   email: string;
+  role: string;
+  faculty_id: number | null;
+  message: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  role: string;
+  faculty_id: number;
+}
+
+export interface RegisterResponse {
+  id: number;
+  email: string;
+  role: string;
+  faculty_id: number | null;
   message: string;
 }
 
 export interface ApiError {
   detail: string;
+}
+
+export interface Faculty {
+  id: number;
+  name: string;
+  is_active: boolean;
 }
 
 export interface Room {
@@ -29,6 +52,7 @@ export interface Room {
   location: string;
   type: string;
   is_active: boolean;
+  faculty_id?: number | null;
 }
 
 export interface RoomCreateRequest {
@@ -36,6 +60,7 @@ export interface RoomCreateRequest {
   capacity: number;
   location: string;
   type: string;
+  faculty_id?: number | null;
 }
 
 export interface RoomUpdateRequest {
@@ -43,6 +68,7 @@ export interface RoomUpdateRequest {
   capacity?: number;
   location?: string;
   type?: string;
+  faculty_id?: number | null;
 }
 
 // ── Helper interno ─────────────────────────────────────────────────────────────
@@ -61,10 +87,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 
 /**
  * loginUser - Envía las credenciales al endpoint de autenticación.
- * @param email - Correo institucional (@uni.edu.pe)
- * @param password - Contraseña del usuario
- * @returns LoginResponse con el token de sesión
- * @throws Error con el mensaje del servidor si las credenciales son inválidas
+ * Almacena token, email, role y faculty_id en sessionStorage.
  */
 export const loginUser = async (
   email: string,
@@ -80,19 +103,42 @@ export const loginUser = async (
 
   const data = await handleResponse<LoginResponse>(response);
 
-  // Almacenar el token en sessionStorage para la sesión actual
+  // Persistir datos de sesión en sessionStorage
   sessionStorage.setItem("access_token", data.access_token);
   sessionStorage.setItem("user_email", data.email);
+  sessionStorage.setItem("user_role", data.role);
+  if (data.faculty_id !== null && data.faculty_id !== undefined) {
+    sessionStorage.setItem("user_faculty_id", String(data.faculty_id));
+  }
 
   return data;
 };
 
 /**
- * logoutUser - Limpia la sesión del usuario del almacenamiento local.
+ * registerUser - Registra un nuevo usuario en el sistema.
+ */
+export const registerUser = async (
+  userData: RegisterRequest
+): Promise<RegisterResponse> => {
+  const response = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  return handleResponse<RegisterResponse>(response);
+};
+
+/**
+ * logoutUser - Limpia todos los datos de sesión del sessionStorage.
  */
 export const logoutUser = (): void => {
   sessionStorage.removeItem("access_token");
   sessionStorage.removeItem("user_email");
+  sessionStorage.removeItem("user_role");
+  sessionStorage.removeItem("user_faculty_id");
 };
 
 /**
@@ -103,13 +149,27 @@ export const getStoredToken = (): string | null => {
   return sessionStorage.getItem("access_token");
 };
 
+// ── Faculties ──────────────────────────────────────────────────────────────────
+
+/**
+ * getFaculties - Obtiene la lista de facultades activas.
+ */
+export const getFaculties = async (): Promise<Faculty[]> => {
+  const response = await fetch(`${BASE_URL}/api/faculties/`);
+  return handleResponse<Faculty[]>(response);
+};
+
 // ── Rooms ──────────────────────────────────────────────────────────────────────
 
 /**
  * getRooms - Obtiene la lista de ambientes activos.
+ * @param facultyId - Opcional: filtra por facultad
  */
-export const getRooms = async (): Promise<Room[]> => {
-  const response = await fetch(`${BASE_URL}/api/rooms/`);
+export const getRooms = async (facultyId?: number): Promise<Room[]> => {
+  const url = facultyId
+    ? `${BASE_URL}/api/rooms/?faculty_id=${facultyId}`
+    : `${BASE_URL}/api/rooms/`;
+  const response = await fetch(url);
   return handleResponse<Room[]>(response);
 };
 
@@ -124,8 +184,6 @@ export const getAllRooms = async (): Promise<Room[]> => {
 
 /**
  * createRoom - Crea un nuevo ambiente en el sistema.
- * @param roomData - Datos del nuevo ambiente
- * @returns El ambiente creado
  */
 export const createRoom = async (roomData: RoomCreateRequest): Promise<Room> => {
   const response = await fetch(`${BASE_URL}/api/rooms/`, {
@@ -140,9 +198,6 @@ export const createRoom = async (roomData: RoomCreateRequest): Promise<Room> => 
 
 /**
  * updateRoom - Edita los datos de un ambiente existente.
- * @param id - ID del ambiente a editar
- * @param roomData - Campos a actualizar (parcial)
- * @returns El ambiente actualizado
  */
 export const updateRoom = async (
   id: number,
@@ -160,8 +215,6 @@ export const updateRoom = async (
 
 /**
  * deactivateRoom - Realiza el borrado lógico de un ambiente.
- * @param id - ID del ambiente a desactivar
- * @returns El ambiente con is_active = false
  */
 export const deactivateRoom = async (id: number): Promise<Room> => {
   const response = await fetch(`${BASE_URL}/api/rooms/${id}/deactivate`, {

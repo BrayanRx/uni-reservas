@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../services/api";
 
 const ALLOWED_DOMAIN = "@uni.edu.pe";
 
 const Login = () => {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Validación de dominio en el cliente antes de enviar al servidor
@@ -21,7 +23,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccessMsg(null);
 
     // Validación de dominio en el cliente
     const domainError = validateDomain(email);
@@ -32,8 +33,9 @@ const Login = () => {
 
     try {
       setLoading(true);
-      const data = await loginUser(email, password);
-      setSuccessMsg(data.message);
+      await loginUser(email, password);
+      // Redirección automática al dashboard tras login exitoso
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.message || "Ocurrió un error inesperado. Intenta de nuevo.");
     } finally {
@@ -115,13 +117,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Mensaje de Éxito */}
-          {successMsg && (
-            <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
-              ✅ {successMsg}
-            </div>
-          )}
-
           {/* Botón Submit */}
           <button
             type="submit"
@@ -131,6 +126,17 @@ const Login = () => {
             {loading ? "Iniciando sesión..." : "Ingresar"}
           </button>
         </form>
+
+        {/* Enlace a Registro */}
+        <p className="text-center text-sm text-gray-500">
+          ¿No tienes cuenta?{" "}
+          <Link
+            to="/register"
+            className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition"
+          >
+            Regístrate aquí
+          </Link>
+        </p>
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400">

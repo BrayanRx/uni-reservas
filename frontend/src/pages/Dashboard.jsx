@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import RoomCard from "../components/RoomCard";
 
-const API_URL = "http://localhost:8000/api/rooms/";
+const BASE_URL = "http://localhost:8000";
 
 const Dashboard = () => {
   const [rooms, setRooms] = useState([]);
@@ -12,7 +12,16 @@ const Dashboard = () => {
     const fetchRooms = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_URL);
+
+        // Recuperar faculty_id del usuario logueado desde sessionStorage
+        const facultyId = sessionStorage.getItem("user_faculty_id");
+
+        // Construir URL con filtro de facultad si está disponible
+        const url = facultyId
+          ? `${BASE_URL}/api/rooms/?faculty_id=${facultyId}`
+          : `${BASE_URL}/api/rooms/`;
+
+        const response = await fetch(url);
 
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status}`);
@@ -31,14 +40,14 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="p-8">
       {/* Encabezado */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Explorador de Ambientes
         </h1>
         <p className="text-gray-500 mt-1">
-          FIIS - UNMSM · Ambientes disponibles ahora
+          FIIS - UNI · Ambientes disponibles ahora
         </p>
       </div>
 
