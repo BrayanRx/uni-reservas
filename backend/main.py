@@ -20,6 +20,7 @@ import models.models  # noqa: F401
 
 from routers import rooms
 from routers import auth
+from routers import faculties
 
 # ── Auto-creación de tablas ────────────────────────────────────────────────────
 # Crea todas las tablas definidas en los modelos si no existen aún.
@@ -50,6 +51,7 @@ app.add_middleware(
 # ── Registro de routers ────────────────────────────────────────────────────────
 app.include_router(rooms.router)
 app.include_router(auth.router)
+app.include_router(faculties.router)
 
 
 # ── Endpoints base ─────────────────────────────────────────────────────────────
