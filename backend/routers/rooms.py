@@ -1,6 +1,21 @@
-from fastapi import APIRouter, HTTPException, status
+"""
+routers/rooms.py - Endpoints para la gestión de ambientes (Rooms).
+
+Endpoints:
+  GET    /api/rooms/         - Lista ambientes activos (Dashboard público).
+  GET    /api/rooms/all      - Lista todos los ambientes (Panel admin).
+  POST   /api/rooms/         - Crea un nuevo ambiente.
+  PUT    /api/rooms/{id}     - Edita un ambiente existente.
+  PATCH  /api/rooms/{id}/deactivate - Borrado lógico de un ambiente.
+"""
+
+from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
+
+from database import get_db
+from models.models import Room, Faculty
 
 router = APIRouter(
     prefix="/api/rooms",
@@ -17,6 +32,7 @@ class RoomResponse(BaseModel):
     location: str
     type: str
     is_active: bool
+    faculty_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -28,6 +44,7 @@ class RoomCreateRequest(BaseModel):
     capacity: int
     location: str
     type: str
+    faculty_id: Optional[int] = None
 
 
 class RoomUpdateRequest(BaseModel):
@@ -36,45 +53,14 @@ class RoomUpdateRequest(BaseModel):
     capacity: Optional[int] = None
     location: Optional[str] = None
     type: Optional[str] = None
+    faculty_id: Optional[int] = None
 
 
-# ── Mock data en memoria para el MVP ──────────────────────────────────────────
-# En producción se reemplazará por operaciones reales con SQLAlchemy + PostgreSQL.
+# ── Helper interno ─────────────────────────────────────────────────────────────
 
-MOCK_ROOMS: List[dict] = [
-    {
-        "id": 1,
-        "name": "Aula 301",
-        "capacity": 40,
-        "location": "Pabellón de Ingeniería Industrial - Piso 3",
-        "type": "Aula",
-        "is_active": True,
-    },
-    {
-        "id": 2,
-        "name": "Laboratorio de Cómputo LC-1",
-        "capacity": 25,
-        "location": "Pabellón de Sistemas - Piso 1",
-        "type": "Laboratorio",
-        "is_active": True,
-    },
-    {
-        "id": 3,
-        "name": "Sala de Estudios SE-02",
-        "capacity": 15,
-        "location": "Biblioteca FIIS - Piso 2",
-        "type": "Sala de Estudios",
-        "is_active": True,
-    },
-]
-
-# Contador para simular auto-incremento de IDs
-_next_id = 4
-
-
-def _find_room(room_id: int) -> dict:
+def _get_room_or_404(room_id: int, db: Session) -> Room:
     """Busca un ambiente por ID. Lanza 404 si no existe."""
-    room = next((r for r in MOCK_ROOMS if r["id"] == room_id), None)
+    room = db.query(Room).filter(Room.id == room_id).first()
     if room is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -83,78 +69,110 @@ def _find_room(room_id: int) -> dict:
     return room
 
 
+def _validate_faculty(faculty_id: int, db: Session) -> None:
+    """Valida que la facultad exista y esté activa. Lanza 404 si no."""
+    faculty = db.query(Faculty).filter(
+        Faculty.id == faculty_id,
+        Faculty.is_active == True,  # noqa: E712
+    ).first()
+    if faculty is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Facultad con id={faculty_id} no encontrada o inactiva.",
+        )
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[RoomResponse])
-def get_rooms():
+def get_rooms(db: Session = Depends(get_db)):
     """
     Retorna la lista de todos los ambientes activos.
-    (MVP: todos los ambientes se consideran disponibles por defecto)
+    Usado por el Dashboard público de estudiantes.
     """
-    return [r for r in MOCK_ROOMS if r["is_active"]]
+    rooms = db.query(Room).filter(Room.is_active == True).all()  # noqa: E712
+    return rooms
 
 
 @router.get("/all", response_model=List[RoomResponse])
-def get_all_rooms():
+def get_all_rooms(db: Session = Depends(get_db)):
     """
     Retorna la lista completa de ambientes (activos e inactivos).
     Usado por el panel de administración.
     """
-    return MOCK_ROOMS
+    rooms = db.query(Room).all()
+    return rooms
 
 
 @router.post("/", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
-def create_room(room_data: RoomCreateRequest):
+def create_room(room_data: RoomCreateRequest, db: Session = Depends(get_db)):
     """
     Crea un nuevo ambiente en el sistema.
+    Valida que la facultad exista si se proporciona faculty_id.
     """
-    global _next_id
-    new_room = {
-        "id": _next_id,
-        "name": room_data.name,
-        "capacity": room_data.capacity,
-        "location": room_data.location,
-        "type": room_data.type,
-        "is_active": True,
-    }
-    MOCK_ROOMS.append(new_room)
-    _next_id += 1
+    if room_data.faculty_id is not None:
+        _validate_faculty(room_data.faculty_id, db)
+
+    new_room = Room(
+        name=room_data.name,
+        capacity=room_data.capacity,
+        location=room_data.location,
+        type=room_data.type,
+        faculty_id=room_data.faculty_id,
+        is_active=True,
+    )
+    db.add(new_room)
+    db.commit()
+    db.refresh(new_room)
     return new_room
 
 
 @router.put("/{room_id}", response_model=RoomResponse)
-def update_room(room_id: int, room_data: RoomUpdateRequest):
+def update_room(
+    room_id: int,
+    room_data: RoomUpdateRequest,
+    db: Session = Depends(get_db),
+):
     """
     Edita los datos de un ambiente existente.
     Solo actualiza los campos enviados en el body.
     """
-    room = _find_room(room_id)
+    room = _get_room_or_404(room_id, db)
+
+    if room_data.faculty_id is not None:
+        _validate_faculty(room_data.faculty_id, db)
 
     if room_data.name is not None:
-        room["name"] = room_data.name
+        room.name = room_data.name
     if room_data.capacity is not None:
-        room["capacity"] = room_data.capacity
+        room.capacity = room_data.capacity
     if room_data.location is not None:
-        room["location"] = room_data.location
+        room.location = room_data.location
     if room_data.type is not None:
-        room["type"] = room_data.type
+        room.type = room_data.type
+    if room_data.faculty_id is not None:
+        room.faculty_id = room_data.faculty_id
 
+    db.commit()
+    db.refresh(room)
     return room
 
 
 @router.patch("/{room_id}/deactivate", response_model=RoomResponse)
-def deactivate_room(room_id: int):
+def deactivate_room(room_id: int, db: Session = Depends(get_db)):
     """
     Realiza el borrado lógico de un ambiente (lo desactiva).
     No elimina el registro para preservar el historial de reservas.
     """
-    room = _find_room(room_id)
+    room = _get_room_or_404(room_id, db)
 
-    if not room["is_active"]:
+    if not room.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"El ambiente con id={room_id} ya se encuentra inactivo.",
         )
 
-    room["is_active"] = False
+    room.is_active = False
+    db.commit()
+    db.refresh(room)
     return room
