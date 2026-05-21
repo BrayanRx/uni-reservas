@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import rooms
+from routers import auth
 
 app = FastAPI(
     title="Sistema de Reservas API",
@@ -23,6 +24,7 @@ app.add_middleware(
 
 # Registro de routers
 app.include_router(rooms.router)
+app.include_router(auth.router)
 
 
 @app.get("/api/health", tags=["Health"])
