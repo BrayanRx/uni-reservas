@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -14,3 +14,4 @@ class Room(Base):
     capacity = Column(Integer, nullable=False)
     location = Column(String(200), nullable=False)
     type = Column(String(50), nullable=False)  # Ej: "Aula", "Laboratorio"
+    is_active = Column(Boolean, default=True, nullable=False)
