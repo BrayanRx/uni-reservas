@@ -25,23 +25,21 @@ El proyecto está completamente contenerizado. Para inicializar los servicios:
    ```bash
    git clone <URL_DEL_REPOSITORIO>
    cd uni-reservas
-
-```
+   ```
 
 2. Configura las variables de entorno:
-Copia el archivo de ejemplo y renómbralo a `.env`.
-```bash
-cp .env.example .env
+   Copia el archivo de ejemplo y renómbralo a `.env`.
+   ```bash
+   cp .env.example .env
+   ```
 
-```
 
-
-*(El archivo `.env` por defecto ya contiene las credenciales locales para PostgreSQL).*
+   *(El archivo `.env` por defecto ya contiene las credenciales locales para PostgreSQL).*
 3. Construye y levanta los contenedores:
-```bash
-docker compose up --build -d
-
-```
+   ```bash
+   docker compose up --build -d
+   
+   ```
 
 
 
@@ -94,7 +92,6 @@ Asegúrate de tener el entorno virtual activado (`venv`) e instala la herramient
 
 ```bash
 pip install aider-chat
-
 ```
 
 *(Es necesario tener configurada tu API Key, por ejemplo: `export ANTHROPIC_API_KEY=tu-llave` o configurada en tu sistema).*
@@ -105,10 +102,9 @@ Para evitar romper la arquitectura o generar *Scope Creep* (expansión descontro
 
 1. **Aislamiento de Tareas:** Lanza prompts específicos de una sola historia de usuario a la vez. No pidas refactorizaciones masivas en un solo prompt.
 2. **Uso de Archivos:** Usa el comando `/add` dentro de Aider para incluir **solo** los archivos relevantes a la tarea actual.
-```text
-> /add backend/routers/rooms.py backend/models/models.py
-
-```
+   ```text
+   > /add backend/routers/rooms.py backend/models/models.py
+   ```
 
 
 3. **Validación:** Revisa los *commits* automáticos que genera Aider. Si la IA rompe algo, utiliza el comando `/undo` inmediatamente para revertir el último cambio.
@@ -120,32 +116,25 @@ Para evitar romper la arquitectura o generar *Scope Creep* (expansión descontro
 
 **Detener los servicios sin borrar datos:**
 
-```bash
-docker compose stop
-
-```
+   ```bash
+   docker compose stop
+   ```
 
 **Destruir los contenedores (Las tablas de la BD se mantendrán por el volumen):**
 
-```bash
-docker compose down
-
-```
+   ```bash
+   docker compose down
+   ```
 
 **Ver los logs en tiempo real (ej. del backend):**
 
-```bash
-docker compose logs -f backend
-
-```
+   ```bash
+   docker compose logs -f backend
+   
+   ```
 
 **Reconstruir forzosamente un servicio tras instalar nuevas dependencias:**
 
-```bash
-docker compose up --build -d backend
-
-
-
-```
-
-```
+   ```bash
+   docker compose up --build -d backend
+   ```
