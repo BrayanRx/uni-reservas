@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: reservas_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -37,7 +37,7 @@ services:
       db:
         condition: service_healthy
 
-  # Servicio Frontend (React + Vite)
+# Servicio Frontend (React + Vite)
   frontend:
     image: node:20-alpine
     container_name: reservas_frontend
@@ -45,12 +45,13 @@ services:
     working_dir: /app
     volumes:
       - ./frontend:/app
+      - /app/node_modules  # Volumen anónimo: Aísla las dependencias del contenedor
     ports:
       - "5173:5173"
-    command: npm run dev -- --host
+    # Instala las dependencias internamente en Linux antes de levantar el servidor
+    command: sh -c "npm install && npm run dev -- --host"
     depends_on:
       - backend
-
 volumes:
   postgres_data:
     driver: local

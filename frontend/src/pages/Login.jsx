@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../services/api";
 
-const ALLOWED_DOMAIN = "@uni.edu.pe";
+const ALLOWED_DOMAIN = "@uni.pe";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ const Login = () => {
                 setEmail(e.target.value);
                 setError(null);
               }}
-              placeholder="tu.nombre@uni.edu.pe"
+              placeholder="tu.nombre@uni.pe"
               required
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
@@ -141,7 +141,7 @@ const Login = () => {
         {/* Footer */}
         <p className="text-center text-xs text-gray-400">
           Solo para estudiantes y docentes con correo{" "}
-          <span className="font-semibold text-gray-500">@uni.edu.pe</span>
+          <span className="font-semibold text-gray-500">@uni.pe</span>
         </p>
       </div>
     </div>

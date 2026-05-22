@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 
 Base = declarative_base()
 
-ALLOWED_DOMAIN = "@uni.edu.pe"
+ALLOWED_DOMAIN = "@uni.pe"
 
 
 # ── Modelo SQLAlchemy ──────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ class UserLoginRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_uni_domain(cls, value: str) -> str:
-        """Valida que el correo pertenezca estrictamente al dominio @uni.edu.pe."""
+        """Valida que el correo pertenezca estrictamente al dominio @uni.pe."""
         if not value.lower().endswith(ALLOWED_DOMAIN):
             raise ValueError(
                 f"Solo se permiten correos institucionales con dominio {ALLOWED_DOMAIN}"

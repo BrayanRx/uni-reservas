@@ -20,7 +20,7 @@ router = APIRouter(
 )
 
 # Dominios institucionales permitidos
-ALLOWED_DOMAINS = ["@uni.edu.pe", "@uni.pe"]
+ALLOWED_DOMAINS = ["@uni.pe"]
 
 # ── Token JWT dummy para el MVP ────────────────────────────────────────────────
 # En producción se generará con python-jose y una SECRET_KEY segura desde .env

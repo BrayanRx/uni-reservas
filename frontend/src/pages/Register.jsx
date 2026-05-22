@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { registerUser, getFaculties } from "../services/api";
 
 // Dominios institucionales permitidos
-const ALLOWED_DOMAINS = ["@uni.edu.pe", "@uni.pe"];
+const ALLOWED_DOMAINS = ["@uni.pe"];
 
 const ROLES = [
   { value: "student", label: "Estudiante" },
@@ -163,7 +163,7 @@ const Register = () => {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="tu.nombre@uni.edu.pe"
+              placeholder="tu.nombre@uni.pe"
               required
               className={`border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                 errors.email ? "border-red-400 bg-red-50" : "border-gray-300"
